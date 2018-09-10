@@ -1,0 +1,42 @@
+{
+     "class": "AS3",
+     "action": "deploy",
+     "persist": true,
+     "declaration": {
+         "class": "ADC",
+         "schemaVersion": "3.0.0",
+         "id": "example-declaration-01",
+         "label": "Sample 1",
+         "remark": "Simple HTTP application with round robin pool",
+         "www": {
+             "class": "Tenant",
+             "Application_1": {
+                 "class": "Application",
+                 "template": "http",
+             "serviceMain": {
+                 "class": "Service_HTTP",
+                 "virtualAddresses": [
+                     "172.18.2.39"
+                 ],
+                 "pool": "web_pool"
+                 },
+                 "web_pool": {
+                     "class": "Pool",
+                     "monitors": [
+                         "http"
+                     ],
+                     "members": [
+                         {
+                             "addressDiscovery": "fqdn",
+                             "addressRealm": "private",
+                             "autoPopulate": true,
+                             "servicePort": 8080,
+                             "hostname": "demo-app-a.cody-local"
+                             
+                         }
+                     ]
+                 }
+             }
+         }
+     }
+ }
