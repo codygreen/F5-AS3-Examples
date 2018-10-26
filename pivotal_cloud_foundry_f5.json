@@ -10,17 +10,9 @@
         "remark": "GoRouter, MySQL Proxy, Diego Brain (SSH) and TCPRouter",
         "PCF": {
             "class": "Tenant",
-            "GoRouter": {
+            "Shared": {
                 "class": "Application",
-                "template": "https",
-                "serviceMain": {
-                    "class": "Service_HTTPS",
-                    "virtualAddresses": [
-                        "10.1.10.10"
-                    ],
-                    "pool": "gorouter_pool",
-                    "serverTLS": "pcf_tls"
-                },
+                "template": "shared", 
                 "gorouter_pool": {
                     "class": "Pool",
                     "monitors": [ {
@@ -37,6 +29,47 @@
                         }
                     ]
                 },
+                "gorouter_mon" : {
+                    "class": "Monitor",
+                    "monitorType": "http",
+                    "send": "GET /health HTTP/1.0\r\n",
+                    "receive": "ok"
+                }
+            },
+            "GoRouter_HTTP": {
+                "class": "Application",
+                "template": "http",
+                "serviceMain": {
+                    "class": "Service_HTTP",
+                    "virtualAddresses": [
+                        "10.1.10.10"
+                    ],
+                    "pool": {
+                        "bigip": "/PFC/Shared/gorouter_pool"
+                    }
+                },
+                "gorouter_http_profile": {
+                    "class": "HTTP_Profile",
+                    "xForwardedFor": true,
+                    "insertHeader": {
+                        "name": "X-Forwarded-Proto",
+                        "value": "http"
+                    }
+                }
+            },
+            "GoRouter_HTTPS": {
+                "class": "Application",
+                "template": "https",
+                "serviceMain": {
+                    "class": "Service_HTTPS",
+                    "virtualAddresses": [
+                        "10.1.10.10"
+                    ],
+                    "pool": {
+                        "bigip": "/PFC/Shared/gorouter_pool"
+                    },
+                    "serverTLS": "pcf_tls"
+                },
                 "gorouter_http_profile": {
                     "class": "HTTP_Profile",
                     "xForwardedFor": true,
@@ -44,12 +77,6 @@
                         "name": "X-Forwarded-Proto",
                         "value": "https"
                     }
-                },
-                "gorouter_mon" : {
-                    "class": "Monitor",
-                    "monitorType": "http",
-                    "send": "GET /health HTTP/1.0\r\n",
-                    "receive": "ok"
                 },
                 "pcf_tls": {
                    "class": "TLS_Server",
@@ -69,6 +96,56 @@
                          "protected": "eyJhbGciOiJkaXIiLCJlbmMiOiJub25lIn0"
                      }
                  }
+            },
+            "MySQLProxy": {
+                "class": "Application",
+                "template": "tcp",
+                "serviceMain": {
+                    "class": "Service_TCP",
+                    "virtualAddresses": [
+                        "10.1.10.10"
+                    ],
+                    "virtualPort": 1936,
+                    "pool": "mysqlproxy_pool"
+                },
+                "mysqlproxy_pool": {
+                    "class": "Pool",
+                    "monitors": [{
+                        "use": "tcp"
+                    }],
+                    "members": [{
+                        "servicePort": 1936,
+                        "serverAddresses": [
+                            "192.0.5.10",
+                            "192.0.5.11"
+                        ]
+                    }]
+                }
+            },
+            "DiegoBrain": {
+                "class": "Application",
+                "template": "tcp",
+                "serviceMain": {
+                    "class": "Service_TCP",
+                    "virtualAddresses": [
+                        "10.1.10.10"
+                    ],
+                    "virtualPort": 2222,
+                    "pool": "diegobrain_pool"
+                },
+                "diegobrain_pool": {
+                    "class": "Pool",
+                    "monitors": [{
+                        "use": "tcp"
+                    }],
+                    "members": [{
+                        "servicePort": 2222,
+                        "serverAddresses": [
+                            "192.0.5.10",
+                            "192.0.5.11"
+                        ]
+                    }]
+                }
             }
         }
     }
