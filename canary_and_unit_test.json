@@ -1,0 +1,107 @@
+{
+    "class": "AS3",
+    "action": "deploy",
+    "declaration": {
+        "class": "ADC",
+        "updateMode": "selective",
+        "schemaVersion": "3.6.0",
+        "id": "usecase1_canary_id",
+        "label": "usecase1_canary_label",
+        "remark": "usecase1_canary_remark",
+        "premiere_0": {
+            "class": "Tenant",
+            "usecase1_canary_vs": {
+                "class": "Application",
+                "template": "http",
+                "serviceMain": {
+                    "class": "Service_HTTP",
+                    "virtualAddresses": [
+                        "10.128.10.201"
+                    ],
+                    "snat": "auto",
+                    "pool": "usecase1_pl",
+                    "policyEndpoint": "usecase1_canary_l7policy",
+                    "iRules": [
+                        {"bigip": "/Common/canary"},
+                        {"bigip": "/Common/unittest"}
+                    ]
+                },
+                "usecase1_pl": {
+                    "class": "Pool",
+                    "monitors": [
+                        "http"
+                    ],
+                    "members": [{
+                            "servicePort": 80,
+                            "serverAddresses": [
+                                "10.128.20.4"
+                            ]
+                        }
+                    ]
+                },
+                "usecase1_canary_pl": {
+                    "class": "Pool",
+                    "monitors": [
+                        "http"
+                    ],
+                    "members": [{
+                            "servicePort": 82,
+                            "serverAddresses": [
+                                "10.128.20.4"
+                            ]
+                        }
+                    ]
+                },
+                "usecase1_canary_l7policy": {
+                    "class": "Endpoint_Policy",
+                    "remark": "L7 Policy for stats",
+                    "rules": [
+                        {
+                            "name": "stats",
+                            "conditions": [
+                                {
+                                    "type": "httpUri",
+                                    "event": "request",
+                                    "path": {
+                                        "operand": "equals",
+                                        "values": [
+                                            "/stats"
+                                        ]
+                                    }
+                                }
+                            ],
+                            "actions": [
+                                {
+                                    "type": "httpRedirect",
+                                    "event": "response",
+                                    "location": "/index.php"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "canary",
+                            "actions": [
+                                {
+                                    "type": "httpHeader",
+                                    "event": "request",
+                                    "insert": {
+                                    	"name": "canary_percentage",
+                                    	"value": "20"
+                                    }
+                                },
+                                {
+                                    "type": "httpHeader",
+                                    "event": "request",
+                                    "insert": {
+                                        "name": "canary_pool",
+                                        "value": "/premiere_0/usecase1_canary_vs/usecase1_canary_pl"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}
